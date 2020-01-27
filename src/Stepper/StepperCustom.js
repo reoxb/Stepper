@@ -1,10 +1,64 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import PropTypes from 'prop-types';
+import { makeStyles, withStyles } from '@material-ui/core/styles';
+import clsx from 'clsx';
 import Stepper from '@material-ui/core/Stepper';
 import Step from '@material-ui/core/Step';
 import StepLabel from '@material-ui/core/StepLabel';
+import StepButton from '@material-ui/core/StepButton';
+import StepConnector from '@material-ui/core/StepConnector';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
+
+/* Icons  */
+import RadioButtonCheckedIcon from '@material-ui/icons/RadioButtonChecked';
+import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
+
+const QontoConnector = withStyles({
+  alternativeLabel: {
+    top: 10,
+    left: 'calc(-50% + 16px)',
+    right: 'calc(50% + 16px)',
+  },
+  line: {
+    borderColor: '#eaeaf0',
+    borderTopWidth: 3,
+    borderRadius: 1,
+  },
+})(StepConnector);
+
+const useQontoStepIconStyles = makeStyles({
+  root: {
+    color: '#eaeaf0',
+    display: 'flex',
+    height: 22,
+    alignItems: 'center',
+  },
+  active: {
+    color: '#784af4',
+    zIndex: 1,
+  }
+});
+
+function QontoStepIcon(props) {
+  const classes = useQontoStepIconStyles();
+  const { active } = props;
+
+  return (
+    <div
+      className={clsx(classes.root, {
+        [classes.active]: active,
+      })}
+    >
+      {active ? <RadioButtonCheckedIcon /> : <RadioButtonUncheckedIcon />}
+    </div>
+  );
+}
+
+QontoStepIcon.propTypes = {
+  active: PropTypes.bool,
+  completed: PropTypes.bool,
+};
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -20,7 +74,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function getSteps() {
-  return ['Select campaign settings', 'Create an ad group', 'Create an ad'];
+  return ['Request', 'Batch', '', ''];
 }
 
 function getStepContent(step) {
@@ -31,53 +85,24 @@ function getStepContent(step) {
       return 'What is an ad group anyways?';
     case 2:
       return 'This is the bit I really care about!';
+    case 3:
+      return 'The new one!';
     default:
       return 'Unknown step';
   }
 }
 
-export default function HorizontalLinearStepper() {
+export default function CustomizedSteppers() {
   const classes = useStyles();
-  const [activeStep, setActiveStep] = React.useState(0);
-  const [skipped, setSkipped] = React.useState(new Set());
+  const [activeStep, setActiveStep] = React.useState(1);
   const steps = getSteps();
 
-  const isStepOptional = step => {
-    return step === 1;
-  };
-
-  const isStepSkipped = step => {
-    return skipped.has(step);
-  };
-
   const handleNext = () => {
-    let newSkipped = skipped;
-    if (isStepSkipped(activeStep)) {
-      newSkipped = new Set(newSkipped.values());
-      newSkipped.delete(activeStep);
-    }
-
     setActiveStep(prevActiveStep => prevActiveStep + 1);
-    setSkipped(newSkipped);
   };
 
   const handleBack = () => {
     setActiveStep(prevActiveStep => prevActiveStep - 1);
-  };
-
-  const handleSkip = () => {
-    if (!isStepOptional(activeStep)) {
-      // You probably want to guard against something like this,
-      // it should never occur unless someone's actively trying to break something.
-      throw new Error("You can't skip a step that isn't optional.");
-    }
-
-    setActiveStep(prevActiveStep => prevActiveStep + 1);
-    setSkipped(prevSkipped => {
-      const newSkipped = new Set(prevSkipped.values());
-      newSkipped.add(activeStep);
-      return newSkipped;
-    });
   };
 
   const handleReset = () => {
@@ -86,23 +111,16 @@ export default function HorizontalLinearStepper() {
 
   return (
     <div className={classes.root}>
-      <Stepper activeStep={activeStep}>
-        {steps.map((label, index) => {
-          const stepProps = {};
-          const labelProps = {};
-          if (isStepOptional(index)) {
-            labelProps.optional = <Typography variant="caption">Optional</Typography>;
-          }
-          if (isStepSkipped(index)) {
-            stepProps.completed = false;
-          }
-          return (
-            <Step key={label} {...stepProps}>
-              <StepLabel {...labelProps}>{label}</StepLabel>
-            </Step>
-          );
-        })}
+      <Stepper alternativeLabel activeStep={activeStep} connector={<QontoConnector />}>
+        {steps.map(label => (
+          <Step key={label}>
+            <StepButton>
+              <StepLabel StepIconComponent={QontoStepIcon}>{label}</StepLabel>
+            </StepButton>
+          </Step>
+        ))}
       </Stepper>
+
       <div>
         {activeStep === steps.length ? (
           <div>
@@ -120,17 +138,6 @@ export default function HorizontalLinearStepper() {
               <Button disabled={activeStep === 0} onClick={handleBack} className={classes.button}>
                 Back
               </Button>
-              {isStepOptional(activeStep) && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSkip}
-                  className={classes.button}
-                >
-                  Skip
-                </Button>
-              )}
-
               <Button
                 variant="contained"
                 color="primary"
